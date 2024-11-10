@@ -1,0 +1,181 @@
+#!/usr/bin/node
+
+const fs = require("fs");
+const crypto = require("crypto");
+const readline = require("readline");
+const os = require("os");
+const path = require("path");
+
+class Todo {
+  constructor(filePath = "tasks.json") {
+    const configDir = path.join(os.homedir(), ".config", "todo"); // Define the config directory
+    this.filePath = path.join(configDir, filePath); // Full path to tasks.json in ~/.config/todo/
+    
+    // Ensure the config directory exists
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+
+    this.statuses = [
+      { id: 1, name: "todo", label: "Todo" },
+      { id: 2, name: "done", label: "Done" },
+      { id: 3, name: "in-progress", label: "In Progress" },
+    ];
+    this.tasks = this.loadTasks();
+  }
+
+  loadTasks() {
+    try {
+      const data = fs.readFileSync(this.filePath, "utf-8");
+      return JSON.parse(data);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  saveTasks() {
+    fs.writeFileSync(this.filePath, JSON.stringify(this.tasks, null, 2));
+  }
+
+  add(task) {
+    this.tasks.push(task);
+    this.saveTasks();
+    console.log(`Added task: ${task.title}`);
+  }
+
+  // Helper method to find a task by ID prefix
+  findTaskByIdPrefix(idPrefix) {
+    if (typeof idPrefix !== "string") {
+      console.log(`Provided ID prefix must be a string.`);
+      return null;
+    }
+
+    // Check for matches with the given prefix
+    const matches = this.tasks.filter((task) => task.id.startsWith(idPrefix));
+
+    if (matches.length === 0) {
+      console.log(`No task found with ID starting with: ${idPrefix}`);
+      return null;
+    }
+    if (matches.length > 1) {
+      console.log(`Multiple tasks found with ID starting with: ${idPrefix}`);
+      return null;
+    }
+
+    return matches[0]; // Return the single matched task
+  }
+
+  delete(idPrefix) {
+    const task = this.findTaskByIdPrefix(idPrefix);
+    if (task) {
+      this.tasks = this.tasks.filter((t) => t.id !== task.id);
+      this.saveTasks();
+      console.log(`Deleted task with ID: ${task.id}`);
+    }
+  }
+
+  update(idPrefix, updatedFields) {
+    const task = this.findTaskByIdPrefix(idPrefix);
+    if (task) {
+      Object.assign(task, updatedFields);
+      this.saveTasks();
+      console.log(`Updated task with ID: ${task.id}`);
+    }
+  }
+
+  detail(idPrefix) {
+    const task = this.findTaskByIdPrefix(idPrefix);
+    if (task) {
+      console.log(task);
+    }
+  }
+
+  markDone(idPrefix) {
+    this.update(idPrefix, { status: "done" });
+  }
+
+  list() {
+    console.log("Tasks:");
+    this.tasks.forEach((task) => {
+      let statusMark = "[]"; // Default marker for "todo"
+      if (task.status === "in-progress") statusMark = "[]";
+      else if (task.status === "done") statusMark = "[]";
+      console.log(`${statusMark} ID: ${task.id}, Title: ${task.title}`);
+    });
+  }
+}
+
+// Setup for reading user input
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+const todo = new Todo();
+
+function createTask() {
+  rl.question("Enter task title: ", (title) => {
+    rl.question("Enter task description: ", (description) => {
+      const hash = crypto
+        .createHash("sha1")
+        .update(Date.now().toString())
+        .digest("hex");
+      const newTask = {
+        id: hash,
+        title,
+        description: description || null,
+        due: new Date(),
+        status: "todo",
+      };
+      todo.add(newTask);
+      rl.close();
+    });
+  });
+}
+
+// Handle command-line arguments
+const command = process.argv[2];
+const arg = process.argv[3];
+
+switch (command) {
+  case "add":
+    createTask();
+    break;
+  case "delete":
+    if (arg) {
+      todo.delete(arg);
+    } else {
+      console.log("Please provide a task ID to delete.");
+    }
+    rl.close();
+    break;
+  case "markDone":
+    if (arg) {
+      todo.markDone(arg);
+    } else {
+      console.log("Please provide a task ID to mark as done.");
+    }
+    rl.close();
+    break;
+  case "list":
+    todo.list();
+    rl.close();
+    break;
+  case "detail":
+    if (arg) {
+      todo.detail(arg);
+    } else {
+      console.log("Please provide a task ID to view.");
+    }
+    rl.close();
+    break;
+  default:
+    console.log("Usage: todo <command> [args]");
+    console.log("Commands:");
+    console.log("  add         - Add a new task");
+    console.log("  delete <id> - Delete a task by ID");
+    console.log("  markDone <id> - Mark a task as done by ID");
+    console.log("  list        - List all tasks");
+    console.log("  detail <id> - View task details");
+    rl.close();
+}

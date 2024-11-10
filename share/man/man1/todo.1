@@ -1,0 +1,49 @@
+.\" Manpage for todo
+.TH TODO 1 "November 2024" "v1.0" "User Commands"
+.SH NAME
+todo \- A simple command-line to-do list manager
+.SH SYNOPSIS
+.B todo
+[\fIcommand\fR] [\fIoptions\fR]
+.SH DESCRIPTION
+The \fItodo\fR command allows users to manage their to-do list from the command line. Tasks can be added, listed, deleted, marked as done, and viewed in detail.
+
+.SH COMMANDS
+.TP
+.B add
+Add a new task to the to-do list. Prompts for the title and description of the task.
+.TP
+.B delete \fIid\fR
+Delete a task by its unique ID.
+.TP
+.B markDone \fIid\fR
+Mark a task as done by its unique ID.
+.TP
+.B list
+List all tasks in the to-do list, showing their status.
+.TP
+.B detail \fIid\fR
+Show detailed information about a specific task by its ID.
+
+.SH OPTIONS
+No global options are currently supported.
+
+.SH EXAMPLES
+.TP
+.B todo add
+Adds a new task, prompting the user for the title and description.
+.TP
+.B todo list
+Lists all tasks currently in the to-do list.
+.TP
+.B todo delete abc123
+Deletes the task with ID "abc123".
+.TP
+.B todo markDone abc123
+Marks the task with ID "abc123" as done.
+.TP
+.B todo detail abc123
+Shows details for the task with ID "abc123".
+
+.SH AUTHOR
+Caesar003, <https://github.com/caesar003/todo-node.git>

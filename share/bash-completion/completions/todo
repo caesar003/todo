@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Autocomplete for "todo" command
+_todo_completions() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local command="${COMP_WORDS[1]}"
+    
+    case "$command" in
+        add)
+            COMPREPLY=( $(compgen -W "title description" -- "$cur") )
+            ;;
+        delete|markDone|detail)
+            # Suggest task IDs for delete, markDone, and detail
+            COMPREPLY=( $(compgen -W "$(todo list | awk '{print $3}')" -- "$cur") )
+            ;;
+        list)
+            COMPREPLY=()
+            ;;
+        *)
+            COMPREPLY=( $(compgen -W "add delete markDone list detail" -- "$cur") )
+            ;;
+    esac
+}
+
+complete -F _todo_completions todo
