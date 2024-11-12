@@ -17,7 +17,7 @@ _todo_completions() {
             COMPREPLY=()
             ;;
         *)
-            COMPREPLY=( $(compgen -W "add delete markDone list detail" -- "$cur") )
+            COMPREPLY=( $(compgen -W "add delete markDone list detail version" -- "$cur") )
             ;;
     esac
 }
