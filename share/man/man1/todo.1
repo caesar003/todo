@@ -1,49 +1,77 @@
-.\" Manpage for todo
-.TH TODO 1 "November 2024" "v1.0.1" "User Commands"
+# Manpage for todo
+.TH TODO 1 "November 2024" "v1.0.4" "User Commands"
 .SH NAME
 todo \- A simple command-line to-do list manager
 .SH SYNOPSIS
 .B todo
 [\fIcommand\fR] [\fIoptions\fR]
 .SH DESCRIPTION
-The \fItodo\fR command allows users to manage their to-do list from the command line. Tasks can be added, listed, deleted, marked as done, and viewed in detail.
+The \fItodo\fR command is a command-line to-do list manager that allows users to manage their tasks with the following features:
+- Add, update, and delete tasks.
+- List tasks by their status.
+- Mark tasks as finished or start working on them.
+- View task details and more.
 
 .SH COMMANDS
 .TP
-.B add
-Add a new task to the to-do list. Prompts for the title and description of the task.
+.B -a, --add
+Add a new task.
 .TP
-.B delete \fIid\fR
-Delete a task by its unique ID.
+.B -u, --update
+Update an existing task.
 .TP
-.B markDone \fIid\fR
-Mark a task as done by its unique ID.
+.B -d, --delete <id>
+Delete a task by ID.
 .TP
-.B list
-List all tasks in the to-do list, showing their status.
+.B -f, --finish <id>
+Mark a task as done by ID.
 .TP
-.B detail \fIid\fR
-Show detailed information about a specific task by its ID.
+.B -l, --list [status]
+List all tasks, or filter by a specific status: "todo", "in-progress", "done", or "all" (default).
+.TP
+.B -s, --start <id>
+Start working on a task.
+.TP
+.B -e, --detail <id>
+View details of a task.
+.TP
+.B -v, --version
+View the version number of the todo CLI.
 
 .SH OPTIONS
-No global options are currently supported.
+.TP
+.B <status>
+Specifies the status of the tasks to list. Can be "todo", "in-progress", "done", or "all" (default).
+.TP
+.B <id>
+The ID of the task to update, delete, finish, or start.
 
 .SH EXAMPLES
 .TP
-.B todo add
-Adds a new task, prompting the user for the title and description.
+Add a task:
+.nf
+todo -a
+.nf
 .TP
-.B todo list
-Lists all tasks currently in the to-do list.
+Update a task:
+.nf
+todo -u <task_id>
+.nf
 .TP
-.B todo delete abc123
-Deletes the task with ID "abc123".
+List tasks by status:
+.nf
+todo -l "todo"
+.nf
 .TP
-.B todo markDone abc123
-Marks the task with ID "abc123" as done.
+Delete a task:
+.nf
+todo -d <task_id>
+.nf
 .TP
-.B todo detail abc123
-Shows details for the task with ID "abc123".
+Finish a task:
+.nf
+todo -f <task_id>
+.nf
 
 .SH AUTHOR
-Caesar003, <https://github.com/caesar003/todo-node.git>
+Caesar003, <https://github.com/caesar003/todo.git>

@@ -1,25 +1,20 @@
 #!/bin/bash
 
-# Autocomplete for "todo" command
-_todo_completions() {
-    local cur="${COMP_WORDS[COMP_CWORD]}"
-    local command="${COMP_WORDS[1]}"
-    
-    case "$command" in
-        add)
-            COMPREPLY=( $(compgen -W "title description" -- "$cur") )
-            ;;
-        delete|markDone|detail)
-            # Suggest task IDs for delete, markDone, and detail
-            COMPREPLY=( $(compgen -W "$(todo list | awk '{print $3}')" -- "$cur") )
-            ;;
-        list)
-            COMPREPLY=()
-            ;;
-        *)
-            COMPREPLY=( $(compgen -W "add delete markDone list detail version" -- "$cur") )
-            ;;
-    esac
+_todo_complete() {
+	local cur prev opts
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD - 1]}"
+	opts="-a --add -u --update -d --delete -f --finish -l --list -s --start -e --detail -v --version"
+
+	if [[ ${cur} == -* ]]; then
+		# Handle options
+		COMPREPLY=($(compgen -W "$opts" -- $cur))
+	elif [[ ${prev} == -d || ${prev} == -f || ${prev} == -s || ${prev} == -e ]]; then
+		# Handle task ID suggestions for delete, finish, start, and detail commands
+		task_ids=$(todo --list --all | awk '{print $2}') # This assumes task IDs are the second column
+		COMPREPLY=($(compgen -W "$task_ids" -- $cur))
+	fi
 }
 
-complete -F _todo_completions todo
+complete -F _todo_complete todo

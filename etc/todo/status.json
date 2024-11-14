@@ -1,0 +1,5 @@
+[
+  { "id": 1, "name": "todo", "label": "Todo", "icon": "📝" },
+  { "id": 2, "name": "in-progress", "label": "In Progress", "icon": "" },
+  { "id": 3, "name": "done", "label": "Done", "icon": "✅" }
+]

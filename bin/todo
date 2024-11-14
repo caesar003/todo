@@ -1,259 +1,338 @@
-#!/usr/bin/node
-
-const VERSION = "1.0.1";
-const fs = require("fs");
-const crypto = require("crypto");
-const readline = require("readline");
-const os = require("os");
-const path = require("path");
-
-class Todo {
-  /**
-   * Initializes a new instance of the Todo class.
-   * @param {string} [filePath='tasks.json'] - The name of the tasks file.
-   */
-  constructor(filePath = "tasks.json") {
-    const configDir = path.join(os.homedir(), ".config", "todo");
-    this.filePath = path.join(configDir, filePath);
-
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
+#!/usr/bin/env node
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-
-    this.statuses = [
-      { id: 1, name: "todo", label: "Todo" },
-      { id: 2, name: "done", label: "Done" },
-      { id: 3, name: "in-progress", label: "In Progress" },
-    ];
-    this.tasks = this.loadTasks();
-  }
-
-  /**
-   * Loads tasks from the file.
-   * @returns {Array<Object>} The array of tasks.
-   */
-  loadTasks() {
-    try {
-      const data = fs.readFileSync(this.filePath, "utf-8");
-      return JSON.parse(data);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  filterTasks(filter) {
-    const { field, value } = filter;
-    try {
-      return this.tasks.filter((items) => items[field] === value);
-    } catch (_err) {
-      return [];
-    }
-  }
-
-  /**
-   * Saves the current tasks to the file.
-   */
-  saveTasks() {
-    fs.writeFileSync(this.filePath, JSON.stringify(this.tasks, null, 2));
-  }
-
-  /**
-   * Adds a new task to the list and saves it.
-   * @param {Object} task - The task to add.
-   */
-  add(task) {
-    this.tasks.push(task);
-    this.saveTasks();
-    console.log(`Added task: ${task.title}`);
-  }
-
-  /**
-   * Finds a task by a partial ID prefix.
-   * @param {string} idPrefix - The ID prefix to search for.
-   * @returns {Object|null} The matched task, or null if not found or ambiguous.
-   */
-  findTaskByIdPrefix(idPrefix) {
-    if (typeof idPrefix !== "string") {
-      console.log(`Provided ID prefix must be a string.`);
-      return null;
-    }
-
-    const matches = this.tasks.filter((task) => task.id.startsWith(idPrefix));
-
-    if (matches.length === 0) {
-      console.log(`No task found with ID starting with: ${idPrefix}`);
-      return null;
-    }
-    if (matches.length > 1) {
-      console.log(`Multiple tasks found with ID starting with: ${idPrefix}`);
-      return null;
-    }
-
-    return matches[0];
-  }
-
-  /**
-   * Deletes a task by ID prefix and saves changes.
-   * @param {string} idPrefix - The ID prefix of the task to delete.
-   */
-  delete(idPrefix) {
-    const task = this.findTaskByIdPrefix(idPrefix);
-    if (task) {
-      this.tasks = this.tasks.filter((t) => t.id !== task.id);
-      this.saveTasks();
-      console.log(`Deleted task with ID: ${task.id}`);
-    }
-  }
-
-  /**
-   * Updates a task by ID prefix with provided fields.
-   * @param {string} idPrefix - The ID prefix of the task to update.
-   * @param {Object} updatedFields - The fields to update in the task.
-   */
-  update(idPrefix, updatedFields) {
-    const task = this.findTaskByIdPrefix(idPrefix);
-    if (task) {
-      Object.assign(task, updatedFields);
-      this.saveTasks();
-      console.log(`Updated task with ID: ${task.id}`);
-    }
-  }
-
-  /**
-   * Displays detailed information about a task, with a status icon.
-   *
-   * @param {string} idPrefix - The unique prefix of the task ID to view.
-   */
-  detail(idPrefix) {
-    const task = this.findTaskByIdPrefix(idPrefix);
-    if (task) {
-      // Set the appropriate status icon
-      let statusIcon = "[]"; // Default icon for "todo"
-      if (task.status === "in-progress") statusIcon = "[]";
-      else if (task.status === "done") statusIcon = "[]";
-
-      console.log(`\nTask Details:\n-------------`);
-      console.log(`ID         : ${task.id}`);
-      console.log(`Title      : ${task.title}`);
-      console.log(`Description: ${task.description}`);
-      console.log(`Due Date   : ${new Date(task.due).toLocaleString()}`);
-      console.log(
-        `Status     : ${statusIcon} ${task.status.charAt(0).toUpperCase() + task.status.slice(1)}`
-      );
-      console.log(`-------------\n`);
-    }
-  }
-
-  /**
-   * Marks a task as done by ID prefix.
-   * @param {string} idPrefix - The ID prefix of the task to mark as done.
-   */
-  finish(idPrefix) {
-    this.update(idPrefix, { status: "done" });
-  }
-
-  /**
-   * Lists all tasks with their status and title.
-   */
-  list() {
-    console.log("Tasks:");
-    this.tasks.forEach((task) => {
-      let statusMark = "[]"; // Default marker for "todo"
-      if (task.status === "in-progress") statusMark = "[]";
-      else if (task.status === "done") statusMark = "[]";
-      console.log(`${statusMark} ID: ${task.id}, Title: ${task.title}`);
-    });
-  }
-  printVersion() {
-    console.log(`TODO node CLI, version ${VERSION}`);
-  }
-}
-
-// Setup for reading user input
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
 });
-
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
+const os = __importStar(require("os"));
+const crypto = __importStar(require("crypto"));
+const readline = __importStar(require("readline"));
+const VERSION = "1.0.4";
+class Todo {
+    constructor(filePath = "tasks.json") {
+        const statusFilePath = "/etc/todo/status.json";
+        const configDir = path.join(os.homedir(), ".config", "todo");
+        this.filePath = path.join(configDir, filePath);
+        try {
+            const data = fs.readFileSync(statusFilePath, "utf-8");
+            this.statuses = JSON.parse(data);
+        }
+        catch (error) {
+            console.error(`Could not load statuses from ${statusFilePath}:`, error);
+            this.statuses = [];
+        }
+        this.tasks = this.load();
+    }
+    getStatusById(statusId) {
+        return this.statuses.find((status) => status.id === statusId);
+    }
+    findTaskByIdPrefix(idPrefix) {
+        if (typeof idPrefix !== "string") {
+            console.log(`Provided ID prefix must be a string.`);
+            return null;
+        }
+        const matches = this.tasks.filter((task) => task.id.startsWith(idPrefix));
+        if (matches.length === 0) {
+            console.log(`No task found with ID starting with: ${idPrefix}`);
+            return null;
+        }
+        if (matches.length > 1) {
+            console.log(`Multiple tasks found with ID starting with: ${idPrefix}`);
+            return null;
+        }
+        return matches[0];
+    }
+    load() {
+        try {
+            const data = fs.readFileSync(this.filePath, "utf-8");
+            return JSON.parse(data);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error(`Error loading tasks from ${this.filePath}: ${error.message}`);
+            }
+            else {
+                console.error("Unknown error occurred while loading tasks.");
+            }
+            return [];
+        }
+    }
+    add(task) {
+        if (this.tasks.some((t) => t.id === task.id)) {
+            console.log(`Task with ID ${task.id} already exists.`);
+            return;
+        }
+        this.tasks.push(task);
+        this.save();
+        console.log(`Added task: ${task.title}`);
+    }
+    delete(idPrefix) {
+        const task = this.findTaskByIdPrefix(idPrefix);
+        if (task) {
+            this.tasks = this.tasks.filter((t) => t.id !== task.id);
+            this.save();
+            console.log(`Deleted task with ID: ${task.id}`);
+        }
+    }
+    list(status = "all") {
+        const filteredTasks = status === "all"
+            ? this.tasks
+            : this.tasks.filter((task) => {
+                const taskStatus = this.getStatusById(task.status_id).name;
+                return taskStatus === status;
+            });
+        if (filteredTasks.length === 0) {
+            console.log(`No tasks found with status "${status}".`);
+        }
+        else {
+            filteredTasks.forEach((task) => {
+                const { label, icon } = this.getStatusById(task.status_id);
+                console.log(`[${icon}] ${task.id} - ${task.title} [${label}]`);
+            });
+        }
+    }
+    update(idPrefix, updatedFields) {
+        const task = this.findTaskByIdPrefix(idPrefix);
+        if (task) {
+            Object.assign(task, { ...updatedFields, last_updated_at: new Date() });
+            this.save();
+            console.log(`Updated task with ID: ${task.id}`);
+        }
+    }
+    start(idPrefix) {
+        const task = this.findTaskByIdPrefix(idPrefix);
+        if (task) {
+            this.update(idPrefix, { status_id: 2 });
+            console.log(`Started task with ID: ${task.id}`);
+        }
+    }
+    detail(idPrefix) {
+        const task = this.findTaskByIdPrefix(idPrefix);
+        if (task) {
+            const { id, title, description, created_at, last_updated_at, status_id, due, } = task;
+            const { label, icon } = this.getStatusById(status_id);
+            console.log(`\nTask Details:\n-------------`);
+            console.log(`ID         : ${id}`);
+            console.log(`Title      : ${title}`);
+            console.log(`Description: ${description}`);
+            console.log(`Created at : ${created_at}`);
+            console.log(`Updated at : ${last_updated_at}`);
+            console.log(`Due        : ${due}`);
+            console.log(`Status     : ${icon} ${label}`);
+            console.log(`-------------\n`);
+        }
+    }
+    finish(idPrefix) {
+        this.update(idPrefix, { status_id: 3 });
+    }
+    save() {
+        fs.writeFileSync(this.filePath, JSON.stringify(this.tasks, null, 2));
+    }
+    printVersion() {
+        console.log(`TODO node CLI, version ${VERSION}`);
+    }
+}
 const todo = new Todo();
-
-/**
- * Prompts the user to create a new task and adds it to the list.
- */
-function createTask() {
-  rl.question("Enter task title: ", (title) => {
-    rl.question("Enter task description: ", (description) => {
-      const hash = crypto
+function generateHash() {
+    return crypto
         .createHash("sha1")
-        .update(Date.now().toString())
+        .update(Date.now().toString() + Math.random())
         .digest("hex");
-      const newTask = {
+}
+function generateTask(input) {
+    const { hash, description, title } = input;
+    return {
         id: hash,
         title,
-        description: description || null,
+        description: description,
         due: new Date(),
-        status: "todo",
-      };
-      todo.add(newTask);
-      rl.close();
-    });
-  });
+        created_at: new Date(),
+        status_id: 1,
+        last_updated_at: new Date(),
+    };
 }
-
-// Handle command-line arguments
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
+function createTask() {
+    rl.question("Enter task title: ", (title) => {
+        rl.question("Enter task description: ", (description) => {
+            // Set default date to tomorrow
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + 1);
+            const defaultDateStr = defaultDate.toISOString().split("T")[0]; // YYYY-MM-DD
+            rl.question(`Enter task due date (YYYY-MM-DD) [Default: ${defaultDateStr}]: `, (dateInput) => {
+                const dueDate = dateInput || defaultDateStr;
+                // Set default time to 17:00
+                const defaultTimeStr = "17:00";
+                rl.question(`Enter task due time (HH:MM) [Default: ${defaultTimeStr}]: `, (timeInput) => {
+                    const dueTime = timeInput || defaultTimeStr;
+                    const dueDateTime = new Date(`${dueDate}T${dueTime}:00`);
+                    // Validate the combined due date and time
+                    if (isNaN(dueDateTime.getTime())) {
+                        console.log("Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time.");
+                        rl.close();
+                        return;
+                    }
+                    const hash = generateHash();
+                    const newTask = generateTask({
+                        title,
+                        hash,
+                        description,
+                        due: dueDateTime,
+                    });
+                    todo.add(newTask);
+                    console.log("Task added successfully!");
+                    rl.close();
+                });
+            });
+        });
+    });
+}
+function updateTask() {
+    rl.question("Enter task ID to update: ", (id) => {
+        const task = todo.findTaskByIdPrefix(id);
+        if (!task) {
+            console.log("Task not found.");
+            rl.close();
+            return;
+        }
+        console.log("Press Enter to skip updating a field.");
+        rl.question(`Update title (current: ${task.title}): `, (title) => {
+            rl.question(`Update description (current: ${task.description}): `, (description) => {
+                rl.question(`Update due date (YYYY-MM-DD HH:mm, current: ${task.due}): `, (dueInput) => {
+                    // Parse `due` date only if provided
+                    let due = dueInput
+                        ? new Date(dueInput)
+                        : undefined;
+                    // Create an object of updates, avoiding undefined fields
+                    const updates = {
+                        title: title || task.title,
+                        description: description || task.description,
+                        due: due || task.due,
+                        last_updated_at: new Date(), // auto-set the last updated timestamp
+                    };
+                    // Perform the update using the internal update method
+                    todo.update(id, updates);
+                    console.log("Task updated successfully.");
+                    rl.close();
+                });
+            });
+        });
+    });
+}
+function deleteTask(taskId) {
+    const task = todo.findTaskByIdPrefix(taskId);
+    if (!task) {
+        console.log("No task found with the provided ID.");
+        rl.close();
+        return;
+    }
+    rl.question(`\t⚠️ WARNING: This action is irreversible.\n\tAre you sure you want to permanently delete the task "${task.title}" (ID: ${task.id})? (y/n): `, (answer) => {
+        if (answer.toLowerCase() === "y") {
+            todo.delete(taskId);
+            console.log("\tTask deleted successfully.");
+        }
+        else {
+            console.log("\tDelete operation canceled.");
+        }
+        rl.close();
+    });
+}
 const command = process.argv[2];
 const arg = process.argv[3];
-
 switch (command) {
-  case "-a":
-  case "--add":
-    createTask();
-    break;
-  case "-d":
-  case "--delete":
-    if (arg) {
-      todo.delete(arg);
-    } else {
-      console.log("Please provide a task ID to delete.");
-    }
-    rl.close();
-    break;
-  case "-f":
-  case "--finish":
-    if (arg) {
-      todo.finish(arg);
-    } else {
-      console.log("Please provide a task ID to mark as done.");
-    }
-    rl.close();
-    break;
-  case "-l":
-  case "--list":
-    todo.list();
-    rl.close();
-    break;
-  case "-e":
-  case "--detail":
-    if (arg) {
-      todo.detail(arg);
-    } else {
-      console.log("Please provide a task ID to view.");
-    }
-    rl.close();
-    break;
-  case "-v":
-  case "--version":
-    todo.printVersion();
-    rl.close();
-    break;
-  default:
-    console.log("Usage: todo <command> [args]");
-    console.log("Commands:");
-    console.log("  -a | --add           - Add a new task");
-    console.log("  -d | --delete <id>   - Delete a task by ID");
-    console.log("  -f | --finish <id>   - Mark a task as done by ID");
-    console.log("  -l | --list          - List all tasks");
-    console.log("  -e | --detail <id>   - View task details");
-    console.log("  -v | --version       - View version number");
-    rl.close();
+    case "-a":
+    case "--add":
+        createTask();
+        break;
+    case "-u":
+    case "--update":
+        updateTask();
+        break;
+    case "-d":
+    case "--delete":
+        if (arg) {
+            deleteTask(arg);
+        }
+        else {
+            console.log("Please provide a task ID to delete.");
+            rl.close();
+        }
+        break;
+    case "-f":
+    case "--finish":
+        if (arg) {
+            todo.finish(arg);
+        }
+        else {
+            console.log("Please provide a task ID to mark as done.");
+        }
+        rl.close();
+        break;
+    case "-l":
+    case "--list":
+        todo.list(arg || "all");
+        rl.close();
+        break;
+    case "-e":
+    case "--detail":
+        if (arg) {
+            todo.detail(arg);
+        }
+        else {
+            console.log("Please provide a task ID to view.");
+        }
+        rl.close();
+        break;
+    case "-v":
+    case "--version":
+        todo.printVersion();
+        rl.close();
+        break;
+    case "-s":
+    case "--start":
+        if (arg) {
+            todo.start(arg);
+        }
+        else {
+            console.log("Please provide a task ID to start.");
+        }
+        rl.close();
+        break;
+    default:
+        console.log("Usage: todo <command> [args]");
+        console.log("Commands:");
+        console.log("  -a | --add           - Add a new task");
+        console.log("  -u | --update        - Update an existing task");
+        console.log("  -d | --delete <id>   - Delete a task by ID");
+        console.log("  -f | --finish <id>   - Mark a task as done by ID");
+        console.log("  -l | --list          - List all tasks");
+        console.log("  -s | --start <id>    - Start working on a task");
+        console.log("  -e | --detail <id>   - View task details");
+        console.log("  -v | --version       - View version number");
+        rl.close();
 }
