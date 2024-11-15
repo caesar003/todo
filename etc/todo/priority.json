@@ -1,0 +1,10 @@
+[
+  { "id": 1, "name": "low", "label": "Low", "icon": "🟢" },
+  { "id": 2, "name": "medium", "label": "Medium", "icon": "🟠" },
+  {
+    "id": 3,
+    "name": "high",
+    "label": "High",
+    "icon": "🔴"
+  }
+]

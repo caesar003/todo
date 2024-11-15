@@ -6,9 +6,9 @@ import * as os from "os";
 import * as crypto from "crypto";
 import * as readline from "readline";
 
-const VERSION = "1.0.4";
+const VERSION = "1.0.5";
 
-export interface Task {
+export interface TaskInterface {
   id: string;
   title: string;
   description: string;
@@ -16,22 +16,21 @@ export interface Task {
   last_updated_at: Date;
   due: Date;
   status_id: number;
-  priority_id?: number;
+  priority_id: number;
 }
 
-export interface Status {
+export interface StatusInterface {
   id: number;
   name: "todo" | "in-progress" | "done";
   label: "Todo" | "In progress" | "Done";
   icon: string;
 }
 
-// we want to leave this for now
-export interface Priority { 
+export interface PriorityInterface {
   id: number;
   name: "low" | "medium" | "high";
   label: "Low" | "Medium" | "High";
-  icon : string;
+  icon: string;
 }
 
 export interface TaskGenerator {
@@ -41,51 +40,68 @@ export interface TaskGenerator {
   due: Date;
 }
 
+const echo = console.log;
+
 class Todo {
   private filePath: string;
-  private statuses: Status[];
-  private tasks: Task[];
+  private statuses: StatusInterface[];
+  private tasks: TaskInterface[];
+  private priorities: PriorityInterface[];
+
   constructor(filePath = "tasks.json") {
     const statusFilePath = "/etc/todo/status.json";
+    const priorityFilePath = "/etc/todo/priority.json";
     const configDir = path.join(os.homedir(), ".config", "todo");
     this.filePath = path.join(configDir, filePath);
 
     try {
-      const data = fs.readFileSync(statusFilePath, "utf-8");
-      this.statuses = JSON.parse(data);
+      const statusTextData = fs.readFileSync(statusFilePath, "utf-8");
+      this.statuses = JSON.parse(statusTextData);
+    } catch (error) {
+      echo(`Could not load statuses from ${statusFilePath}:`, error);
+      this.statuses = [];
+    }
+
+    try {
+      const priorityTextData = fs.readFileSync(priorityFilePath, "utf-8");
+      this.priorities = JSON.parse(priorityTextData);
     } catch (error) {
       console.error(`Could not load statuses from ${statusFilePath}:`, error);
-      this.statuses = [];
+      this.priorities = [];
     }
 
     this.tasks = this.load();
   }
 
-  private getStatusById(statusId: number): Status {
+  private getPriorityById(priorityId: number): PriorityInterface {
+    return this.priorities.find((priority) => priority.id === priorityId)!;
+  }
+
+  private getStatusById(statusId: number): StatusInterface {
     return this.statuses.find((status) => status.id === statusId)!;
   }
 
-  public findTaskByIdPrefix(idPrefix: string): Task | null {
+  public findTaskByIdPrefix(idPrefix: string): TaskInterface | null {
     if (typeof idPrefix !== "string") {
-      console.log(`Provided ID prefix must be a string.`);
+      echo(`Provided ID prefix must be a string.`);
       return null;
     }
 
     const matches = this.tasks.filter((task) => task.id.startsWith(idPrefix));
 
     if (matches.length === 0) {
-      console.log(`No task found with ID starting with: ${idPrefix}`);
+      echo(`No task found with ID starting with: ${idPrefix}`);
       return null;
     }
     if (matches.length > 1) {
-      console.log(`Multiple tasks found with ID starting with: ${idPrefix}`);
+      echo(`Multiple tasks found with ID starting with: ${idPrefix}`);
       return null;
     }
 
     return matches[0];
   }
 
-  private load(): Task[] {
+  private load(): TaskInterface[] {
     try {
       const data = fs.readFileSync(this.filePath, "utf-8");
       return JSON.parse(data);
@@ -101,14 +117,14 @@ class Todo {
     }
   }
 
-  public add(task: Task): void {
+  public add(task: TaskInterface): void {
     if (this.tasks.some((t) => t.id === task.id)) {
-      console.log(`Task with ID ${task.id} already exists.`);
+      echo(`Task with ID ${task.id} already exists.`);
       return;
     }
     this.tasks.push(task);
     this.save();
-    console.log(`Added task: ${task.title}`);
+    echo(`Added task: ${task.title}`);
   }
 
   public delete(idPrefix: string): void {
@@ -116,7 +132,7 @@ class Todo {
     if (task) {
       this.tasks = this.tasks.filter((t) => t.id !== task.id);
       this.save();
-      console.log(`Deleted task with ID: ${task.id}`);
+      echo(`Deleted task with ID: ${task.id}`);
     }
   }
   public list(
@@ -131,27 +147,30 @@ class Todo {
           });
 
     if (filteredTasks.length === 0) {
-      console.log(`No tasks found with status "${status}".`);
+      echo(`No tasks found with status "${status}".`);
     } else {
       filteredTasks.forEach((task) => {
-        const { label, icon } = this.getStatusById(task.status_id);
-        console.log(`[${icon}] ${task.id} - ${task.title} [${label}]`);
+        const { icon: priorityIcon } = this.getPriorityById(
+          task.priority_id || 1
+        );
+        const { icon: statusIcon } = this.getStatusById(task.status_id);
+        echo(`[${statusIcon}] ${task.id} - ${task.title} [${priorityIcon}]`);
       });
     }
   }
-  public update(idPrefix: string, updatedFields: Partial<Task>): void {
+  public update(idPrefix: string, updatedFields: Partial<TaskInterface>): void {
     const task = this.findTaskByIdPrefix(idPrefix);
     if (task) {
       Object.assign(task, { ...updatedFields, last_updated_at: new Date() });
       this.save();
-      console.log(`Updated task with ID: ${task.id}`);
+      echo(`Updated task with ID: ${task.id}`);
     }
   }
   public start(idPrefix: string): void {
     const task = this.findTaskByIdPrefix(idPrefix);
     if (task) {
       this.update(idPrefix, { status_id: 2 });
-      console.log(`Started task with ID: ${task.id}`);
+      echo(`Started task with ID: ${task.id}`);
     }
   }
 
@@ -165,18 +184,23 @@ class Todo {
         created_at,
         last_updated_at,
         status_id,
+        priority_id,
         due,
       } = task;
-      const { label, icon } = this.getStatusById(status_id);
-      console.log(`\nTask Details:\n-------------`);
-      console.log(`ID         : ${id}`);
-      console.log(`Title      : ${title}`);
-      console.log(`Description: ${description}`);
-      console.log(`Created at : ${created_at}`);
-      console.log(`Updated at : ${last_updated_at}`);
-      console.log(`Due        : ${due}`);
-      console.log(`Status     : ${icon} ${label}`);
-      console.log(`-------------\n`);
+      const { label: statusLabel, icon: statusIcon } =
+        this.getStatusById(status_id);
+      const { label: priorityLabel, icon: priorityIcon } =
+        this.getPriorityById(priority_id);
+      echo(`\nTask Details:\n-------------`);
+      echo(`ID         : ${id}`);
+      echo(`Title      : ${title}`);
+      echo(`Description: ${description}`);
+      echo(`Created at : ${created_at}`);
+      echo(`Updated at : ${last_updated_at}`);
+      echo(`Due        : ${due}`);
+      echo(`Status     : ${statusIcon} ${statusLabel}`);
+      echo(`Priority   : ${priorityIcon} ${priorityLabel}`);
+      echo(`-------------\n`);
     }
   }
   public finish(idPrefix: string): void {
@@ -186,7 +210,7 @@ class Todo {
     fs.writeFileSync(this.filePath, JSON.stringify(this.tasks, null, 2));
   }
   public printVersion() {
-    console.log(`TODO node CLI, version ${VERSION}`);
+    echo(`TODO node CLI, version ${VERSION}`);
   }
 }
 
@@ -199,7 +223,7 @@ function generateHash() {
     .digest("hex");
 }
 
-function generateTask(input: TaskGenerator): Task {
+function generateTask(input: TaskGenerator): TaskInterface {
   const { hash, description, title } = input;
   return {
     id: hash,
@@ -209,6 +233,7 @@ function generateTask(input: TaskGenerator): Task {
     created_at: new Date(),
     status_id: 1,
     last_updated_at: new Date(),
+    priority_id: 1,
   };
 }
 
@@ -220,17 +245,15 @@ const rl = readline.createInterface({
 function createTask() {
   rl.question("Enter task title: ", (title: string) => {
     rl.question("Enter task description: ", (description: string) => {
-      // Set default date to tomorrow
       const defaultDate = new Date();
       defaultDate.setDate(defaultDate.getDate() + 1);
-      const defaultDateStr = defaultDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      const defaultDateStr = defaultDate.toISOString().split("T")[0];
 
       rl.question(
         `Enter task due date (YYYY-MM-DD) [Default: ${defaultDateStr}]: `,
         (dateInput: string) => {
           const dueDate = dateInput || defaultDateStr;
 
-          // Set default time to 17:00
           const defaultTimeStr = "17:00";
           rl.question(
             `Enter task due time (HH:MM) [Default: ${defaultTimeStr}]: `,
@@ -239,25 +262,37 @@ function createTask() {
 
               const dueDateTime = new Date(`${dueDate}T${dueTime}:00`);
 
-              // Validate the combined due date and time
               if (isNaN(dueDateTime.getTime())) {
-                console.log(
+                echo(
                   "Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time."
                 );
                 rl.close();
                 return;
               }
 
-              const hash = generateHash();
-              const newTask = generateTask({
-                title,
-                hash,
-                description,
-                due: dueDateTime,
-              });
-              todo.add(newTask);
-              console.log("Task added successfully!");
-              rl.close();
+              rl.question(
+                "Enter task priority (1: Low, 2: Medium, 3: High) [Default: 1]: ",
+                (priorityInput: string) => {
+                  let priorityId = parseInt(priorityInput) || 1;
+
+                  if (![1, 2, 3].includes(priorityId)) {
+                    echo("Invalid priority. Default to Low (1)");
+                    priorityId = 1;
+                  }
+
+                  const hash = generateHash();
+                  const newTask = generateTask({
+                    title,
+                    hash,
+                    description,
+                    due: dueDateTime,
+                  });
+                  newTask.priority_id = priorityId;
+                  todo.add(newTask);
+                  echo("Task added successfully!");
+                  rl.close();
+                }
+              );
             }
           );
         }
@@ -270,49 +305,57 @@ function updateTask() {
   rl.question("Enter task ID to update: ", (id: string) => {
     const task = todo.findTaskByIdPrefix(id);
     if (!task) {
-      console.log("Task not found.");
+      echo("Task not found.");
       rl.close();
       return;
     }
 
-    console.log("Press Enter to skip updating a field.");
+    echo("Press Enter to skip updating a field.");
 
-    rl.question(`Update title (current: ${task.title}): `, (title: string) => {
-      rl.question(
-        `Update description (current: ${task.description}): `,
-        (description: string) => {
-          rl.question(
-            `Update due date (YYYY-MM-DD HH:mm, current: ${task.due}): `,
-            (dueInput: string) => {
-              // Parse `due` date only if provided
-              let due: Date | undefined = dueInput
-                ? new Date(dueInput)
-                : undefined;
+    rl.question(
+      `Update title (current: ${task.title}):\n\t`,
+      (title: string) => {
+        rl.question(
+          `Update description (current: ${task.description}):\n\t`,
+          (description: string) => {
+            rl.question(
+              `Update due date (YYYY-MM-DD HH:mm, current: ${task.due}):\n\t`,
+              (dueInput: string) => {
+                let due: Date | undefined = dueInput
+                  ? new Date(dueInput)
+                  : undefined;
 
-              // Create an object of updates, avoiding undefined fields
-              const updates: Partial<Task> = {
-                title: title || task.title,
-                description: description || task.description,
-                due: due || task.due,
-                last_updated_at: new Date(), // auto-set the last updated timestamp
-              };
+                rl.question(
+                  `Update priority (1: Low, 2: Medium, 3: High, current: ${task.priority_id || 1}) \n\t`,
+                  (priorityInput: string) => {
+                    const priorityId =
+                      parseInt(priorityInput) || task.priority_id;
 
-              // Perform the update using the internal update method
-              todo.update(id, updates);
-              console.log("Task updated successfully.");
-              rl.close();
-            }
-          );
-        }
-      );
-    });
+                    const updates: Partial<TaskInterface> = {
+                      priority_id: priorityId,
+                      title: title || task.title,
+                      description: description || task.description,
+                      due: due || task.due,
+                      last_updated_at: new Date(),
+                    };
+                    todo.update(id, updates);
+                    echo("Task updated successfully.");
+                    rl.close();
+                  }
+                );
+              }
+            );
+          }
+        );
+      }
+    );
   });
 }
 
 function deleteTask(taskId: string) {
   const task = todo.findTaskByIdPrefix(taskId);
   if (!task) {
-    console.log("No task found with the provided ID.");
+    echo("No task found with the provided ID.");
     rl.close();
     return;
   }
@@ -322,9 +365,9 @@ function deleteTask(taskId: string) {
     (answer: string) => {
       if (answer.toLowerCase() === "y") {
         todo.delete(taskId);
-        console.log("\tTask deleted successfully.");
+        echo("\tTask deleted successfully.");
       } else {
-        console.log("\tDelete operation canceled.");
+        echo("\tDelete operation canceled.");
       }
       rl.close();
     }
@@ -348,7 +391,7 @@ switch (command) {
     if (arg) {
       deleteTask(arg);
     } else {
-      console.log("Please provide a task ID to delete.");
+      echo("Please provide a task ID to delete.");
       rl.close();
     }
     break;
@@ -357,7 +400,7 @@ switch (command) {
     if (arg) {
       todo.finish(arg);
     } else {
-      console.log("Please provide a task ID to mark as done.");
+      echo("Please provide a task ID to mark as done.");
     }
     rl.close();
     break;
@@ -371,7 +414,7 @@ switch (command) {
     if (arg) {
       todo.detail(arg);
     } else {
-      console.log("Please provide a task ID to view.");
+      echo("Please provide a task ID to view.");
     }
     rl.close();
     break;
@@ -386,20 +429,20 @@ switch (command) {
     if (arg) {
       todo.start(arg);
     } else {
-      console.log("Please provide a task ID to start.");
+      echo("Please provide a task ID to start.");
     }
     rl.close();
     break;
   default:
-    console.log("Usage: todo <command> [args]");
-    console.log("Commands:");
-    console.log("  -a | --add           - Add a new task");
-    console.log("  -u | --update        - Update an existing task");
-    console.log("  -d | --delete <id>   - Delete a task by ID");
-    console.log("  -f | --finish <id>   - Mark a task as done by ID");
-    console.log("  -l | --list          - List all tasks");
-    console.log("  -s | --start <id>    - Start working on a task");
-    console.log("  -e | --detail <id>   - View task details");
-    console.log("  -v | --version       - View version number");
+    echo("Usage: todo <command> [args]");
+    echo("Commands:");
+    echo("  -a | --add           - Add a new task");
+    echo("  -u | --update        - Update an existing task");
+    echo("  -d | --delete <id>   - Delete a task by ID");
+    echo("  -f | --finish <id>   - Mark a task as done by ID");
+    echo("  -l | --list          - List all tasks");
+    echo("  -s | --start <id>    - Start working on a task");
+    echo("  -e | --detail <id>   - View task details");
+    echo("  -v | --version       - View version number");
     rl.close();
 }
