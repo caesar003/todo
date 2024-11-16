@@ -29,8 +29,8 @@ const path = __importStar(require("path"));
 const os = __importStar(require("os"));
 const crypto = __importStar(require("crypto"));
 const readline = __importStar(require("readline"));
-const VERSION = "1.0.5";
-const echo = console.log;
+const VERSION = "1.0.6";
+const E = console.log;
 class Todo {
     constructor(filePath = "tasks.json") {
         const statusFilePath = "/etc/todo/status.json";
@@ -42,7 +42,7 @@ class Todo {
             this.statuses = JSON.parse(statusTextData);
         }
         catch (error) {
-            echo(`Could not load statuses from ${statusFilePath}:`, error);
+            E(`Could not load statuses from ${statusFilePath}:`, error);
             this.statuses = [];
         }
         try {
@@ -63,16 +63,16 @@ class Todo {
     }
     findTaskByIdPrefix(idPrefix) {
         if (typeof idPrefix !== "string") {
-            echo(`Provided ID prefix must be a string.`);
+            E(`Provided ID prefix must be a string.`);
             return null;
         }
         const matches = this.tasks.filter((task) => task.id.startsWith(idPrefix));
         if (matches.length === 0) {
-            echo(`No task found with ID starting with: ${idPrefix}`);
+            E(`No task found with ID starting with: ${idPrefix}`);
             return null;
         }
         if (matches.length > 1) {
-            echo(`Multiple tasks found with ID starting with: ${idPrefix}`);
+            E(`Multiple tasks found with ID starting with: ${idPrefix}`);
             return null;
         }
         return matches[0];
@@ -94,19 +94,19 @@ class Todo {
     }
     add(task) {
         if (this.tasks.some((t) => t.id === task.id)) {
-            echo(`Task with ID ${task.id} already exists.`);
+            E(`Task with ID ${task.id} already exists.`);
             return;
         }
         this.tasks.push(task);
         this.save();
-        echo(`Added task: ${task.title}`);
+        E(`Added task: ${task.title}`);
     }
     delete(idPrefix) {
         const task = this.findTaskByIdPrefix(idPrefix);
         if (task) {
             this.tasks = this.tasks.filter((t) => t.id !== task.id);
             this.save();
-            echo(`Deleted task with ID: ${task.id}`);
+            E(`Deleted task with ID: ${task.id}`);
         }
     }
     list(status = "all") {
@@ -117,13 +117,13 @@ class Todo {
                 return taskStatus === status;
             });
         if (filteredTasks.length === 0) {
-            echo(`No tasks found with status "${status}".`);
+            E(`No tasks found with status "${status}".`);
         }
         else {
             filteredTasks.forEach((task) => {
                 const { icon: priorityIcon } = this.getPriorityById(task.priority_id || 1);
                 const { icon: statusIcon } = this.getStatusById(task.status_id);
-                echo(`[${statusIcon}] ${task.id} - ${task.title} [${priorityIcon}]`);
+                E(`[${statusIcon}] ${task.id} - ${task.title} [${priorityIcon}]`);
             });
         }
     }
@@ -132,14 +132,14 @@ class Todo {
         if (task) {
             Object.assign(task, { ...updatedFields, last_updated_at: new Date() });
             this.save();
-            echo(`Updated task with ID: ${task.id}`);
+            E(`Updated task with ID: ${task.id}`);
         }
     }
     start(idPrefix) {
         const task = this.findTaskByIdPrefix(idPrefix);
         if (task) {
             this.update(idPrefix, { status_id: 2 });
-            echo(`Started task with ID: ${task.id}`);
+            E(`Started task with ID: ${task.id}`);
         }
     }
     detail(idPrefix) {
@@ -148,16 +148,16 @@ class Todo {
             const { id, title, description, created_at, last_updated_at, status_id, priority_id, due, } = task;
             const { label: statusLabel, icon: statusIcon } = this.getStatusById(status_id);
             const { label: priorityLabel, icon: priorityIcon } = this.getPriorityById(priority_id);
-            echo(`\nTask Details:\n-------------`);
-            echo(`ID         : ${id}`);
-            echo(`Title      : ${title}`);
-            echo(`Description: ${description}`);
-            echo(`Created at : ${created_at}`);
-            echo(`Updated at : ${last_updated_at}`);
-            echo(`Due        : ${due}`);
-            echo(`Status     : ${statusIcon} ${statusLabel}`);
-            echo(`Priority   : ${priorityIcon} ${priorityLabel}`);
-            echo(`-------------\n`);
+            E(`\nTask Details:\n-------------`);
+            E(`ID         : ${id}`);
+            E(`Title      : ${title}`);
+            E(`Description: ${description}`);
+            E(`Created at : ${created_at}`);
+            E(`Updated at : ${last_updated_at}`);
+            E(`Due        : ${due}`);
+            E(`Status     : ${statusIcon} ${statusLabel}`);
+            E(`Priority   : ${priorityIcon} ${priorityLabel}`);
+            E(`-------------\n`);
         }
     }
     finish(idPrefix) {
@@ -167,7 +167,7 @@ class Todo {
         fs.writeFileSync(this.filePath, JSON.stringify(this.tasks, null, 2));
     }
     printVersion() {
-        echo(`TODO node CLI, version ${VERSION}`);
+        E(`TODO node CLI, version ${VERSION}`);
     }
 }
 const todo = new Todo();
@@ -207,14 +207,14 @@ function createTask() {
                     const dueTime = timeInput || defaultTimeStr;
                     const dueDateTime = new Date(`${dueDate}T${dueTime}:00`);
                     if (isNaN(dueDateTime.getTime())) {
-                        echo("Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time.");
+                        E("Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time.");
                         rl.close();
                         return;
                     }
                     rl.question("Enter task priority (1: Low, 2: Medium, 3: High) [Default: 1]: ", (priorityInput) => {
                         let priorityId = parseInt(priorityInput) || 1;
                         if (![1, 2, 3].includes(priorityId)) {
-                            echo("Invalid priority. Default to Low (1)");
+                            E("Invalid priority. Default to Low (1)");
                             priorityId = 1;
                         }
                         const hash = generateHash();
@@ -226,7 +226,7 @@ function createTask() {
                         });
                         newTask.priority_id = priorityId;
                         todo.add(newTask);
-                        echo("Task added successfully!");
+                        E("Task added successfully!");
                         rl.close();
                     });
                 });
@@ -238,11 +238,11 @@ function updateTask() {
     rl.question("Enter task ID to update: ", (id) => {
         const task = todo.findTaskByIdPrefix(id);
         if (!task) {
-            echo("Task not found.");
+            E("Task not found.");
             rl.close();
             return;
         }
-        echo("Press Enter to skip updating a field.");
+        E("Press Enter to skip updating a field.");
         rl.question(`Update title (current: ${task.title}):\n\t`, (title) => {
             rl.question(`Update description (current: ${task.description}):\n\t`, (description) => {
                 rl.question(`Update due date (YYYY-MM-DD HH:mm, current: ${task.due}):\n\t`, (dueInput) => {
@@ -250,7 +250,9 @@ function updateTask() {
                         ? new Date(dueInput)
                         : undefined;
                     rl.question(`Update priority (1: Low, 2: Medium, 3: High, current: ${task.priority_id || 1}) \n\t`, (priorityInput) => {
-                        const priorityId = parseInt(priorityInput) || task.priority_id;
+                        const priorityId = ([1, 2, 3].includes(parseInt(priorityInput))
+                            ? parseInt(priorityInput)
+                            : task.priority_id);
                         const updates = {
                             priority_id: priorityId,
                             title: title || task.title,
@@ -259,7 +261,7 @@ function updateTask() {
                             last_updated_at: new Date(),
                         };
                         todo.update(id, updates);
-                        echo("Task updated successfully.");
+                        E("Task updated successfully.");
                         rl.close();
                     });
                 });
@@ -270,17 +272,17 @@ function updateTask() {
 function deleteTask(taskId) {
     const task = todo.findTaskByIdPrefix(taskId);
     if (!task) {
-        echo("No task found with the provided ID.");
+        E("No task found with the provided ID.");
         rl.close();
         return;
     }
     rl.question(`\t⚠️ WARNING: This action is irreversible.\n\tAre you sure you want to permanently delete the task "${task.title}" (ID: ${task.id})? (y/n): `, (answer) => {
         if (answer.toLowerCase() === "y") {
             todo.delete(taskId);
-            echo("\tTask deleted successfully.");
+            E("\tTask deleted successfully.");
         }
         else {
-            echo("\tDelete operation canceled.");
+            E("\tDelete operation canceled.");
         }
         rl.close();
     });
@@ -302,7 +304,7 @@ switch (command) {
             deleteTask(arg);
         }
         else {
-            echo("Please provide a task ID to delete.");
+            E("Please provide a task ID to delete.");
             rl.close();
         }
         break;
@@ -312,7 +314,7 @@ switch (command) {
             todo.finish(arg);
         }
         else {
-            echo("Please provide a task ID to mark as done.");
+            E("Please provide a task ID to mark as done.");
         }
         rl.close();
         break;
@@ -327,7 +329,7 @@ switch (command) {
             todo.detail(arg);
         }
         else {
-            echo("Please provide a task ID to view.");
+            E("Please provide a task ID to view.");
         }
         rl.close();
         break;
@@ -342,20 +344,20 @@ switch (command) {
             todo.start(arg);
         }
         else {
-            echo("Please provide a task ID to start.");
+            E("Please provide a task ID to start.");
         }
         rl.close();
         break;
     default:
-        echo("Usage: todo <command> [args]");
-        echo("Commands:");
-        echo("  -a | --add           - Add a new task");
-        echo("  -u | --update        - Update an existing task");
-        echo("  -d | --delete <id>   - Delete a task by ID");
-        echo("  -f | --finish <id>   - Mark a task as done by ID");
-        echo("  -l | --list          - List all tasks");
-        echo("  -s | --start <id>    - Start working on a task");
-        echo("  -e | --detail <id>   - View task details");
-        echo("  -v | --version       - View version number");
+        E("Usage: todo <command> [args]");
+        E("Commands:");
+        E("  -a | --add           - Add a new task");
+        E("  -u | --update        - Update an existing task");
+        E("  -d | --delete <id>   - Delete a task by ID");
+        E("  -f | --finish <id>   - Mark a task as done by ID");
+        E("  -l | --list          - List all tasks");
+        E("  -s | --start <id>    - Start working on a task");
+        E("  -e | --detail <id>   - View task details");
+        E("  -v | --version       - View version number");
         rl.close();
 }
