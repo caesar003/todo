@@ -1,9 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
 import { TaskInterface, PriorityInterface, StatusInterface } from "./types";
-
-const VERSION = "1.0.8";
+import { VERSION, CONFIG_DIR } from "./constants";
 
 class Todo {
   private filePath: string;
@@ -14,8 +12,7 @@ class Todo {
   constructor(filePath = "tasks.json") {
     const statusFilePath = "/etc/todo/status.json";
     const priorityFilePath = "/etc/todo/priority.json";
-    const configDir = path.join(os.homedir(), ".config", "todo");
-    this.filePath = path.join(configDir, filePath);
+    this.filePath = path.join(CONFIG_DIR, filePath);
 
     try {
       const statusTextData = fs.readFileSync(statusFilePath, "utf-8");

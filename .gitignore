@@ -1,5 +1,9 @@
-debian
+# debian
 node_modules
 dist
 
 notes
+debian/todo/usr/bin
+debian/todo/usr/lib
+
+*.deb

@@ -8,8 +8,7 @@
   "scripts": {
     "build": "tsc",
     "start": "ts-node src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postbuild": "rm -rf ./bin/* && cp dist/todo.js ./bin/todo && chmod +x ./bin/todo"
+    "postbuild": "./postbuild.sh"
   },
   "keywords": [],
   "license": "MIT",
