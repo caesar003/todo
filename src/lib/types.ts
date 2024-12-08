@@ -3,7 +3,7 @@ export interface TaskInterface {
   title: string;
   description: string;
   created_at: Date;
-  last_updated_at: Date;
+  updated_at: Date;
   due: Date;
   status_id: StatusInterface["id"];
   priority_id: PriorityInterface["id"];
@@ -29,3 +29,8 @@ export interface TaskGenerator {
   title: string;
   due: Date;
 }
+
+export type MergedTask = TaskInterface & {
+  priority: PriorityInterface | null;
+  status: StatusInterface | null;
+};

@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-import { Todo } from "./lib/core";
-import { createTask, updateTask, deleteTask, showHelp } from "./lib/commands";
+import { TaskManager } from "./lib/TaskManager";
 import { rl } from "./lib/utils";
 
-const todo: Todo = new Todo();
+const taskManager: TaskManager = new TaskManager();
 
 const command = process.argv[2];
 const arg = process.argv[3];
@@ -12,16 +11,16 @@ const arg = process.argv[3];
 switch (command) {
   case "-a":
   case "--add":
-    createTask(todo);
+    taskManager.createTask();
     break;
   case "-u":
   case "--update":
-    updateTask(todo);
+    taskManager.updateTask();
     break;
   case "-d":
   case "--delete":
     if (arg) {
-      deleteTask(todo, arg);
+      taskManager.deleteTask(arg);
     } else {
       console.log("Please provide a task ID to delete.");
       rl.close();
@@ -30,7 +29,7 @@ switch (command) {
   case "-f":
   case "--finish":
     if (arg) {
-      todo.finish(arg);
+      taskManager.finish(arg);
     } else {
       console.log("Please provide a task ID to mark as done.");
     }
@@ -38,13 +37,13 @@ switch (command) {
     break;
   case "-l":
   case "--list":
-    todo.list(arg || "all");
+    taskManager.list(arg || "all");
     rl.close();
     break;
   case "-e":
   case "--detail":
     if (arg) {
-      todo.detail(arg);
+      taskManager.detail(arg);
     } else {
       console.log("Please provide a task ID to view.");
     }
@@ -52,20 +51,20 @@ switch (command) {
     break;
   case "-v":
   case "--version":
-    todo.printVersion();
+    taskManager.printVersion();
     rl.close();
     break;
 
   case "-s":
   case "--start":
     if (arg) {
-      todo.start(arg);
+      taskManager.start(arg);
     } else {
       console.log("Please provide a task ID to start.");
     }
     rl.close();
     break;
   default:
-    showHelp();
+    taskManager.showHelp();
     rl.close();
 }

@@ -9,7 +9,7 @@ export default function generateTask(input: TaskGenerator): TaskInterface {
     due: new Date(),
     created_at: new Date(),
     status_id: 1,
-    last_updated_at: new Date(),
+    updated_at: new Date(),
     priority_id: 1,
   };
 }

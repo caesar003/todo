@@ -7,3 +7,4 @@ debian/todo/usr/bin
 debian/todo/usr/lib
 
 *.deb
+*.txt

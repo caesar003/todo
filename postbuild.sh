@@ -14,6 +14,6 @@ chmod +x debian/todo/usr/bin/todo
 
 cp -r dist/lib/* debian/todo/usr/lib/todo/
 
-cp -r usr/share/* debian/todo/usr/share
+# cp -r usr/share/* debian/todo/usr/share
 
-cd debian && builddeb
+# cd debian && builddeb
