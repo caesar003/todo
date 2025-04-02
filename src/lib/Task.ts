@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { TaskInterface, StatusInterface, MergedTask } from "./types";
+import { useLabels } from "./utils/labels/useLabels";
 import { CONFIG_DIR } from "./constants";
 
 import { Priority } from "./Priority";
@@ -16,28 +17,31 @@ class Task {
   private priorityInstance: Priority;
   private statusInstance: Status;
 
+  private l: (key: string, values?: Record<string, string>) => string;
+
   constructor(filePath = "tasks.json") {
     this.filePath = path.join(CONFIG_DIR, filePath);
     this.priorityInstance = new Priority();
     this.statusInstance = new Status();
 
     this.tasks = this.load();
+    this.l = useLabels().l;
   }
 
   public findByIdPrefix(idPrefix: string): TaskInterface | null {
     if (typeof idPrefix !== "string") {
-      console.log(`Provided ID prefix must be a string.`);
+      console.log(this.l("e.idNotString"));
       return null;
     }
 
     const matches = this.tasks.filter((task) => task.id.startsWith(idPrefix));
 
     if (matches.length === 0) {
-      console.log(`No task found with ID starting with: ${idPrefix}`);
+      console.log(this.l("e.taskNotFound", { value: idPrefix }));
       return null;
     }
     if (matches.length > 1) {
-      console.log(`Multiple tasks found with ID starting with: ${idPrefix}`);
+      console.log(this.l("e.duplicateIdPrefix", { value: idPrefix }));
       return null;
     }
 
@@ -53,8 +57,11 @@ class Task {
         console.error(
           `Error loading tasks from ${this.filePath}: ${error.message}`
         );
+        const eProps = { path: this.filePath, message: error.message };
+        const ePrompt = this.l("e.duplicateIdPrefix", eProps);
+        console.log(ePrompt);
       } else {
-        console.error("Unknown error occurred while loading tasks.");
+        console.error(this.l("e.unknownErr"));
       }
       return [];
     }
@@ -85,9 +92,8 @@ class Task {
       status === "all"
         ? this.tasks
         : this.tasks.filter((task) => {
-            const taskStatus = this.statusInstance.getById(
-              task.status_id
-            )?.name;
+            const taskStatus = this.statusInstance.getById(task.status_id)
+              ?.name;
             return taskStatus === status;
           });
 
