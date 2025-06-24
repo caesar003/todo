@@ -79,16 +79,19 @@ export class TaskManager {
 
   public updateTask() {
     rl.question(this.l("update.id"), (id: string) => {
-      const task = this.taskInstance.findByIdPrefix(id);
-      if (!task) {
-        console.log(this.l("general.taskNotFound", { value: id }));
+      const result = this.taskInstance.findByIdPrefix(id);
+
+      if (!result.success) {
+        console.log(result.errorMessage);
         rl.close();
         return;
       }
 
+      const task = result.data!; // We know it exists because success is true
+
       console.log("update.skipField");
 
-      const titlePrompt = this.l("update.title", { value: task.id });
+      const titlePrompt = this.l("update.title", { value: task.title });
       const descProps = { value: task.description };
       const descPrompt = this.l("update.description", descProps);
       const dueProps = { value: new Date(task.due).toLocaleString() };
@@ -120,8 +123,13 @@ export class TaskManager {
                 due: due || task.due,
                 updated_at: new Date(),
               };
-              this.taskInstance.update(id, updates);
-              console.log(this.l("update.success"));
+
+              const updateSuccess = this.taskInstance.update(id, updates);
+              if (updateSuccess) {
+                console.log(this.l("update.success"));
+              } else {
+                console.log(this.l("general.taskNotFound"));
+              }
               rl.close();
             });
           });
@@ -131,22 +139,29 @@ export class TaskManager {
   }
 
   public deleteTask(taskId: string) {
-    const task = this.taskInstance.findByIdPrefix(taskId);
-    if (!task) {
-      console.log(this.l("delete.notFound"));
+    const result = this.taskInstance.findByIdPrefix(taskId);
+
+    if (!result.success) {
+      console.log(result.errorMessage);
       rl.close();
       return;
     }
+
+    const task = result.data!; // We know it exists because success is true
 
     const deleteProps = { title: task.title, id: task.id };
     const deletePrompt = this.l("delete.confirm", deleteProps);
 
     rl.question(deletePrompt, (answer: string) => {
       if (answer.toLowerCase() === "y") {
-        this.taskInstance.delete(taskId);
-        console.log(this.l("delete.success"));
+        const deleteSuccess = this.taskInstance.delete(taskId);
+        if (deleteSuccess) {
+          console.log(this.l("delete.success"));
+        } else {
+          console.log(this.l("general.taskNotFound"));
+        }
       } else {
-        console.log(this.l("delete.success"));
+        console.log(this.l("delete.cancelled")); // This should probably be "cancelled" not "success"
       }
       rl.close();
     });
@@ -226,28 +241,42 @@ export class TaskManager {
   }
 
   public finish(idPrefix: string): void {
+    const result = this.taskInstance.findByIdPrefix(idPrefix);
+
+    if (!result.success) {
+      console.log(result.errorMessage);
+      return;
+    }
+
     const success: boolean = this.taskInstance.update(idPrefix, {
       status_id: this.DONE,
     });
 
     if (success) {
       console.log(this.l("finish", { value: idPrefix }));
-      return;
+    } else {
+      console.log(this.l("general.taskNotFound"));
     }
-
-    console.log(this.l("general.taskNotFound"));
   }
 
   public start(idPrefix: string): void {
+    const result = this.taskInstance.findByIdPrefix(idPrefix);
+
+    if (!result.success) {
+      console.log(result.errorMessage);
+      return;
+    }
+
+    // Task exists, proceed with update
     const success: boolean = this.taskInstance.update(idPrefix, {
       status_id: this.IN_PROGRESS,
     });
 
     if (success) {
       console.log(this.l("start", { value: idPrefix }));
-      return;
+    } else {
+      // This should rarely happen since we already verified the task exists
+      console.log(this.l("general.taskNotFound"));
     }
-
-    console.log(this.l("general.taskNotFound"));
   }
 }

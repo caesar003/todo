@@ -53,7 +53,7 @@ export const tables: Record<string, string> = {
   "help.update": "  -u | --update        - Update an existing task",
   "help.delete": "  -d | --delete <id>   - Delete a task by ID",
   "help.finish": "  -f | --finish <id>   - Mark a task as done by ID",
-  "help.list": "  -l | --list          - List all tasks",
+  "help.list": "  -l | --list <status>  - List all tasks",
   "help.start": "  -s | --start <id>    - Start working on a task",
   "help.detail": "  -e | --detail <id>   - View task details",
   "help.version": "  -v | --version       - View version number",
