@@ -2,10 +2,20 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { TaskInterface, StatusInterface, MergedTask } from "./types";
+import { useLabels } from "./utils/labels/useLabels";
 import { CONFIG_DIR } from "./constants";
 
 import { Priority } from "./Priority";
 import { Status } from "./Status";
+
+type TaskError = "NOT_FOUND" | "DUPLICATE_PREFIX" | "INVALID_ID";
+
+interface TaskResult<T> {
+  success: boolean;
+  data?: T;
+  error?: TaskError;
+  errorMessage?: string;
+}
 
 type TaskListParam = string | "all" | StatusInterface["name"] | undefined;
 
@@ -16,32 +26,48 @@ class Task {
   private priorityInstance: Priority;
   private statusInstance: Status;
 
+  private l: (key: string, values?: Record<string, string>) => string;
+
   constructor(filePath = "tasks.json") {
     this.filePath = path.join(CONFIG_DIR, filePath);
     this.priorityInstance = new Priority();
     this.statusInstance = new Status();
 
     this.tasks = this.load();
+    this.l = useLabels().l;
   }
 
-  public findByIdPrefix(idPrefix: string): TaskInterface | null {
+  public findByIdPrefix(idPrefix: string): TaskResult<TaskInterface> {
     if (typeof idPrefix !== "string") {
-      console.log(`Provided ID prefix must be a string.`);
-      return null;
+      return {
+        success: false,
+        error: "INVALID_ID",
+        errorMessage: this.l("e.idNotString"),
+      };
     }
 
     const matches = this.tasks.filter((task) => task.id.startsWith(idPrefix));
 
     if (matches.length === 0) {
-      console.log(`No task found with ID starting with: ${idPrefix}`);
-      return null;
-    }
-    if (matches.length > 1) {
-      console.log(`Multiple tasks found with ID starting with: ${idPrefix}`);
-      return null;
+      return {
+        success: false,
+        error: "NOT_FOUND",
+        errorMessage: this.l("e.taskNotFound", { value: idPrefix }),
+      };
     }
 
-    return matches[0];
+    if (matches.length > 1) {
+      return {
+        success: false,
+        error: "DUPLICATE_PREFIX",
+        errorMessage: this.l("e.duplicateIdPrefix", { value: idPrefix }),
+      };
+    }
+
+    return {
+      success: true,
+      data: matches[0],
+    };
   }
 
   private load(): TaskInterface[] {
@@ -53,8 +79,11 @@ class Task {
         console.error(
           `Error loading tasks from ${this.filePath}: ${error.message}`
         );
+        const eProps = { path: this.filePath, message: error.message };
+        const ePrompt = this.l("e.duplicateIdPrefix", eProps);
+        console.log(ePrompt);
       } else {
-        console.error("Unknown error occurred while loading tasks.");
+        console.error(this.l("e.unknownErr"));
       }
       return [];
     }
@@ -71,13 +100,26 @@ class Task {
   }
 
   public delete(idPrefix: string): boolean {
-    const task = this.findByIdPrefix(idPrefix);
-    if (task) {
-      this.tasks = this.tasks.filter((t) => t.id !== task.id);
+    const result = this.findByIdPrefix(idPrefix);
+    if (result.success && result.data) {
+      this.tasks = this.tasks.filter((t) => t.id !== result.data!.id);
       this.save();
       return true;
     }
     return false;
+  }
+
+  public detail(idPrefix: string): MergedTask | null {
+    const result = this.findByIdPrefix(idPrefix);
+    if (!result.success || !result.data) {
+      return null;
+    }
+
+    const task = result.data;
+    const priority = this.priorityInstance.getById(task.priority_id);
+    const status = this.statusInstance.getById(task.status_id);
+
+    return { ...task, priority, status };
   }
 
   public list(status: TaskListParam = "all"): MergedTask[] {
@@ -85,9 +127,8 @@ class Task {
       status === "all"
         ? this.tasks
         : this.tasks.filter((task) => {
-            const taskStatus = this.statusInstance.getById(
-              task.status_id
-            )?.name;
+            const taskStatus = this.statusInstance.getById(task.status_id)
+              ?.name;
             return taskStatus === status;
           });
 
@@ -98,19 +139,10 @@ class Task {
     });
   }
 
-  public detail(idPrefix: string): MergedTask | null {
-    const task = this.findByIdPrefix(idPrefix);
-    if (!task) return null;
-    const priority = this.priorityInstance.getById(task.priority_id);
-    const status = this.statusInstance.getById(task.status_id);
-
-    return { ...task, priority, status };
-  }
-
   public update(idPrefix: string, fields: Partial<TaskInterface>): boolean {
-    const task = this.findByIdPrefix(idPrefix);
-    if (task) {
-      Object.assign(task, { ...fields, updated_at: new Date() });
+    const result = this.findByIdPrefix(idPrefix);
+    if (result.success && result.data) {
+      Object.assign(result.data, { ...fields, updated_at: new Date() });
       this.save();
       return true;
     }

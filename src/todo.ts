@@ -2,8 +2,11 @@
 
 import { TaskManager } from "./lib/TaskManager";
 import { rl } from "./lib/utils";
+import { useLabels } from "./lib/utils/labels/useLabels";
 
 const taskManager: TaskManager = new TaskManager();
+
+const { l } = useLabels();
 
 const command = process.argv[2];
 const arg = process.argv[3];
@@ -22,7 +25,7 @@ switch (command) {
     if (arg) {
       taskManager.deleteTask(arg);
     } else {
-      console.log("Please provide a task ID to delete.");
+      console.log(l("e.idToDelete"));
       rl.close();
     }
     break;
@@ -31,7 +34,7 @@ switch (command) {
     if (arg) {
       taskManager.finish(arg);
     } else {
-      console.log("Please provide a task ID to mark as done.");
+      console.log(l("e.idToMarkDone"));
     }
     rl.close();
     break;
@@ -45,7 +48,7 @@ switch (command) {
     if (arg) {
       taskManager.detail(arg);
     } else {
-      console.log("Please provide a task ID to view.");
+      console.log(l("e.idToView"));
     }
     rl.close();
     break;
@@ -60,7 +63,7 @@ switch (command) {
     if (arg) {
       taskManager.start(arg);
     } else {
-      console.log("Please provide a task ID to start.");
+      console.log(l("e.idToStart"));
     }
     rl.close();
     break;

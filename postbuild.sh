@@ -9,11 +9,13 @@ mkdir -p debian/todo/usr/lib/todo
 mkdir -p debian/todo/usr/bin
 
 # binary
-cp dist/todo.js debian/todo/usr/bin/todo
+cp -v dist/todo.js debian/todo/usr/bin/todo
 chmod +x debian/todo/usr/bin/todo
 
-cp -r dist/lib/* debian/todo/usr/lib/todo/
+cp -rfv dist/lib/* debian/todo/usr/lib/todo/
 
-# cp -r usr/share/* debian/todo/usr/share
+# cp -r src/usr/share/* debian/todo/usr/share
+
+echo "Assets built"
 
 # cd debian && builddeb

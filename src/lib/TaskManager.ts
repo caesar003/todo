@@ -1,148 +1,170 @@
 import { rl, generateHash, generateTask, formatDate } from "./utils";
 import { PriorityInterface, TaskInterface } from "./types";
+import { useLabels } from "./utils/labels/useLabels";
 
 import { VERSION } from "./constants";
 import { Task } from "./Task";
+type Status = 1 | 2 | 3;
 
 export class TaskManager {
   private taskInstance: Task;
+  private l: (key: string, values?: Record<string, string>) => string;
+  private statuses: Status[];
+  private DONE: Status;
+  private IN_PROGRESS: Status;
 
   constructor() {
     this.taskInstance = new Task();
+    this.l = useLabels().l;
+    this.statuses = [1, 3, 3];
+    this.DONE = this.statuses[2];
+    this.IN_PROGRESS = this.statuses[1];
   }
 
   public createTask() {
-    rl.question("Enter task title: ", (title: string) => {
-      rl.question("Enter task description: ", (description: string) => {
-        const defaultDate = new Date();
-        defaultDate.setDate(defaultDate.getDate() + 1);
-        const defaultDateStr = defaultDate.toISOString().split("T")[0];
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 1);
+    const defaultDateStr = defaultDate.toISOString().split("T")[0];
+    const defaultTimeStr = "17:00";
+    const ddProps = { value: defaultDateStr };
+    const dtProps = { value: defaultTimeStr };
 
-        rl.question(
-          `Enter task due date (YYYY-MM-DD) [Default: ${defaultDateStr}]: `,
-          (dateInput: string) => {
-            const dueDate = dateInput || defaultDateStr;
-            const defaultTimeStr = "17:00";
+    const prioPrompt = this.l("create.priorityInput");
+    const titlePrompt = this.l("create.title");
+    const descPrompt = this.l("create.description");
+    const ddPrompt = this.l("create.dueDate", ddProps);
 
-            rl.question(
-              `Enter task due time (HH:MM) [Default: ${defaultTimeStr}]: `,
-              (timeInput: string) => {
-                const dueTime = timeInput || defaultTimeStr;
-                const dueDateTime = new Date(`${dueDate}T${dueTime}:00`);
+    const dtPrompt = this.l("create.dueTime", dtProps);
 
-                if (isNaN(dueDateTime.getTime())) {
-                  console.log(
-                    "Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time."
-                  );
-                  rl.close();
-                  return;
-                }
+    rl.question(titlePrompt, (title: string) => {
+      rl.question(descPrompt, (description: string) => {
+        rl.question(ddPrompt, (dateInput: string) => {
+          const dueDate = dateInput || defaultDateStr;
 
-                rl.question(
-                  "Enter task priority (1: Low, 2: Medium, 3: High) [Default: 1]: ",
-                  (priorityInput: string) => {
-                    let priorityId = parseInt(priorityInput) || 1;
+          rl.question(dtPrompt, (timeInput: string) => {
+            const dueTime = timeInput || defaultTimeStr;
+            const dueDateTime = new Date(`${dueDate}T${dueTime}:00`);
 
-                    if (![1, 2, 3].includes(priorityId)) {
-                      console.log("Invalid priority. Default to Low (1)");
-                      priorityId = 1;
-                    }
+            if (isNaN(dueDateTime.getTime())) {
+              console.log(this.l("create.invalidDateTime"));
+              rl.close();
+              return;
+            }
 
-                    const hash = generateHash();
-                    const newTask = generateTask({
-                      title,
-                      hash,
-                      description,
-                      due: dueDateTime,
-                    });
-                    newTask.priority_id = priorityId as PriorityInterface["id"];
-                    this.taskInstance.add(newTask);
-                    console.log("Task added successfully!");
-                    rl.close();
-                  }
-                );
+            rl.question(prioPrompt, (priorityInput: string) => {
+              let priorityId = parseInt(priorityInput) || 1;
+
+              if (![1, 2, 3].includes(priorityId)) {
+                console.log(this.l("create.invalidPriority"));
+                priorityId = 1;
               }
-            );
-          }
-        );
+
+              const hash = generateHash();
+              const newTask = generateTask({
+                title,
+                hash,
+                description,
+                due: dueDateTime,
+              });
+              newTask.priority_id = priorityId as PriorityInterface["id"];
+              this.taskInstance.add(newTask);
+              console.log(this.l("create.success"));
+              rl.close();
+            });
+          });
+        });
       });
     });
   }
 
   public updateTask() {
-    rl.question("Enter task ID to update: ", (id: string) => {
-      const task = this.taskInstance.findByIdPrefix(id);
-      if (!task) {
-        console.log("Task not found.");
+    rl.question(this.l("update.id"), (id: string) => {
+      const result = this.taskInstance.findByIdPrefix(id);
+
+      if (!result.success) {
+        console.log(result.errorMessage);
         rl.close();
         return;
       }
 
-      console.log("Press Enter to skip updating a field.");
+      const task = result.data!; // We know it exists because success is true
 
-      rl.question(
-        `Update title (current: ${task.title}):\n\t`,
-        (title: string) => {
-          rl.question(
-            `Update description (current: ${task.description}):\n\t`,
-            (description: string) => {
-              rl.question(
-                `Update due date (YYYY-MM-DD HH:mm, current: ${task.due}):\n\t`,
-                (dueInput: string) => {
-                  let due: Date | undefined = dueInput
-                    ? new Date(dueInput)
-                    : undefined;
+      console.log("update.skipField");
 
-                  rl.question(
-                    `Update priority (1: Low, 2: Medium, 3: High, current: ${task.priority_id || 1}) \n\t`,
-                    (priorityInput: string) => {
-                      const priorityId = (
-                        [1, 2, 3].includes(parseInt(priorityInput))
-                          ? parseInt(priorityInput)
-                          : task.priority_id
-                      ) as PriorityInterface["id"];
+      const titlePrompt = this.l("update.title", { value: task.title });
+      const descProps = { value: task.description };
+      const descPrompt = this.l("update.description", descProps);
+      const dueProps = { value: new Date(task.due).toLocaleString() };
+      const duePrompt = this.l("update.dueDate", dueProps);
 
-                      const updates: Partial<TaskInterface> = {
-                        priority_id: priorityId,
-                        title: title || task.title,
-                        description: description || task.description,
-                        due: due || task.due,
-                        updated_at: new Date(),
-                      };
-                      this.taskInstance.update(id, updates);
-                      console.log("Task updated successfully.");
-                      rl.close();
-                    }
-                  );
-                }
-              );
-            }
-          );
-        }
-      );
+      const prioProps = {
+        value: String(task.priority_id) || "1",
+      };
+      const prioPrompt = this.l("update.priority", prioProps);
+
+      rl.question(titlePrompt, (title: string) => {
+        rl.question(descPrompt, (description: string) => {
+          rl.question(duePrompt, (dueInput: string) => {
+            let due: Date | undefined = dueInput
+              ? new Date(dueInput)
+              : undefined;
+
+            rl.question(prioPrompt, (priorityInput: string) => {
+              const priorityId = (
+                [1, 2, 3].includes(parseInt(priorityInput))
+                  ? parseInt(priorityInput)
+                  : task.priority_id
+              ) as PriorityInterface["id"];
+
+              const updates: Partial<TaskInterface> = {
+                priority_id: priorityId,
+                title: title || task.title,
+                description: description || task.description,
+                due: due || task.due,
+                updated_at: new Date(),
+              };
+
+              const updateSuccess = this.taskInstance.update(id, updates);
+              if (updateSuccess) {
+                console.log(this.l("update.success"));
+              } else {
+                console.log(this.l("general.taskNotFound"));
+              }
+              rl.close();
+            });
+          });
+        });
+      });
     });
   }
 
   public deleteTask(taskId: string) {
-    const task = this.taskInstance.findByIdPrefix(taskId);
-    if (!task) {
-      console.log("No task found with the provided ID.");
+    const result = this.taskInstance.findByIdPrefix(taskId);
+
+    if (!result.success) {
+      console.log(result.errorMessage);
       rl.close();
       return;
     }
 
-    rl.question(
-      `\t⚠️ WARNING: This action is irreversible.\n\tAre you sure you want to permanently delete the task "${task.title}" (ID: ${task.id})? (y/N): `,
-      (answer: string) => {
-        if (answer.toLowerCase() === "y") {
-          this.taskInstance.delete(taskId);
-          console.log("\tTask deleted successfully.");
+    const task = result.data!; // We know it exists because success is true
+
+    const deleteProps = { title: task.title, id: task.id };
+    const deletePrompt = this.l("delete.confirm", deleteProps);
+
+    rl.question(deletePrompt, (answer: string) => {
+      if (answer.toLowerCase() === "y") {
+        const deleteSuccess = this.taskInstance.delete(taskId);
+        if (deleteSuccess) {
+          console.log(this.l("delete.success"));
         } else {
-          console.log("\tDelete operation canceled.");
+          console.log(this.l("general.taskNotFound"));
         }
-        rl.close();
+      } else {
+        console.log(this.l("delete.cancelled")); // This should probably be "cancelled" not "success"
       }
-    );
+      rl.close();
+    });
   }
 
   public detail(taskId: string): void {
@@ -150,36 +172,37 @@ export class TaskManager {
 
     if (!task) return;
 
-    const {
-      id,
-      title,
-      description,
-      created_at,
-      updated_at: updated_at,
-      due,
-      status,
-      priority,
-    } = task;
+    const { id, title, description, created_at, updated_at, due } = task;
 
-    console.log(`\nTask Details:\n-------------`);
-    console.log(`ID         : ${id}`);
-    console.log(`Title      : ${title}`);
-    console.log(`Description: ${description}`);
-    console.log(`Created at : ${formatDate(created_at)}`);
-    console.log(`Updated at : ${formatDate(updated_at)}`);
-    console.log(`Due        : ${formatDate(due)}`);
+    const formCreatAt = formatDate(created_at);
+    const formUpdatAt = formatDate(updated_at);
+    const formDue = formatDate(due);
 
-    if (status) {
-      console.log(`Status     : ${status.icon} ${status.label}`);
+    let status: string | undefined;
+    let priority: string | undefined;
+
+    if (task.status) {
+      status = `${task.status.icon} ${task.status.label}`;
     } else {
-      console.log(`Status     : Not available`);
+      status = this.l("general.notAvailable");
     }
 
-    if (priority) {
-      console.log(`Priority   : ${priority.icon} ${priority.label}`);
+    if (task.priority) {
+      priority = `${task.priority.icon} ${task.priority.label}`;
     } else {
-      console.log(`Priority   : Not available`);
+      priority = this.l("general.notAvailable");
     }
+
+    console.log(this.l("detail.header"));
+    console.log(this.l("detail.id", { value: id }));
+    console.log(this.l("detail.title", { value: title }));
+    console.log(this.l("detail.description", { value: description }));
+    console.log(this.l("detail.createdAt", { value: formCreatAt }));
+    console.log(this.l("detail.updatedAt", { value: formUpdatAt }));
+    console.log(this.l("detail.due", { value: formDue }));
+
+    console.log(this.l("detail.status", { value: status }));
+    console.log(this.l("detail.priorty", { value: priority }));
 
     console.log(`-------------\n`);
     rl.close();
@@ -188,7 +211,7 @@ export class TaskManager {
   public list(status: string): void {
     const tasks = this.taskInstance.list(status);
     if (!tasks.length) {
-      console.log("No tasks found");
+      console.log(this.l("general.taskEmpty"));
       rl.close();
       return;
     }
@@ -201,44 +224,59 @@ export class TaskManager {
   }
 
   public showHelp() {
-    console.log("Usage: todo <command> [args]");
-    console.log("Commands:");
-    console.log("  -a | --add           - Add a new task");
-    console.log("  -u | --update        - Update an existing task");
-    console.log("  -d | --delete <id>   - Delete a task by ID");
-    console.log("  -f | --finish <id>   - Mark a task as done by ID");
-    console.log("  -l | --list          - List all tasks");
-    console.log("  -s | --start <id>    - Start working on a task");
-    console.log("  -e | --detail <id>   - View task details");
-    console.log("  -v | --version       - View version number");
+    console.log(this.l("help.usage"));
+    console.log(this.l("help.commands"));
+    console.log(this.l("help.add"));
+    console.log(this.l("help.update"));
+    console.log(this.l("help.delete"));
+    console.log(this.l("help.finish"));
+    console.log(this.l("help.list"));
+    console.log(this.l("help.start"));
+    console.log(this.l("help.detail"));
+    console.log(this.l("help.version"));
   }
+
   public printVersion() {
-    console.log(`TODO node CLI, version ${VERSION}`);
+    console.log(this.l("version", { value: VERSION }));
   }
 
   public finish(idPrefix: string): void {
-    const success: boolean = this.taskInstance.update(idPrefix, {
-      status_id: 3,
-    });
+    const result = this.taskInstance.findByIdPrefix(idPrefix);
 
-    if (success) {
-      console.log(`Finished task ${idPrefix}`);
+    if (!result.success) {
+      console.log(result.errorMessage);
       return;
     }
 
-    console.log(`Task not found!`);
+    const success: boolean = this.taskInstance.update(idPrefix, {
+      status_id: this.DONE,
+    });
+
+    if (success) {
+      console.log(this.l("finish", { value: idPrefix }));
+    } else {
+      console.log(this.l("general.taskNotFound"));
+    }
   }
 
   public start(idPrefix: string): void {
-    const success: boolean = this.taskInstance.update(idPrefix, {
-      status_id: 2,
-    });
+    const result = this.taskInstance.findByIdPrefix(idPrefix);
 
-    if (success) {
-      console.log(`Starting on task ${idPrefix}`);
+    if (!result.success) {
+      console.log(result.errorMessage);
       return;
     }
 
-    console.log(`Task not found!`);
+    // Task exists, proceed with update
+    const success: boolean = this.taskInstance.update(idPrefix, {
+      status_id: this.IN_PROGRESS,
+    });
+
+    if (success) {
+      console.log(this.l("start", { value: idPrefix }));
+    } else {
+      // This should rarely happen since we already verified the task exists
+      console.log(this.l("general.taskNotFound"));
+    }
   }
 }
