@@ -89,7 +89,7 @@ export class TaskManager {
 
       const task = result.data!; // We know it exists because success is true
 
-      console.log("update.skipField");
+      console.log(this.l("update.skipField"));
 
       const titlePrompt = this.l("update.title", { value: task.title });
       const descProps = { value: task.description };
