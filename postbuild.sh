@@ -27,12 +27,14 @@ echo "📁 Copying compiled library..."
 cp -r dist/lib/* debian/todo/usr/lib/todo/
 
 # 3. Update control file version
-echo "📝 Updating DEBIAN/control version..."
-sed -i "s/^Version:.*/Version: $PACKAGE_VERSION/" debian/todo/DEBIAN/control
+sed "s/{{VERSION}}/$PACKAGE_VERSION/g" \
+	debian/todo/DEBIAN/control.template >debian/todo/DEBIAN/control
 
 # 4. Update manpage version (e.g. "v1.1.2")
 echo "📚 Updating manpage..."
-sed -i "s/\"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/\"v$PACKAGE_VERSION\"/" debian/todo/usr/share/man/man1/todo.1
+sed "s/{{VERSION}}/v$PACKAGE_VERSION/g" \
+	debian/todo/usr/share/man/man1/todo.1.template \
+	>debian/todo/usr/share/man/man1/todo.1
 
 # 5. Build .deb package
 echo "📦 Building .deb package..."

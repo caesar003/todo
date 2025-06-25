@@ -5,6 +5,8 @@ dist
 notes
 debian/todo/usr/bin
 debian/todo/usr/lib
+debian/todo/DEBIAN/control
+debian/todo/usr/share/man/man1/todo.1
 
 *.deb
 *.txt
