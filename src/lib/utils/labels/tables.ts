@@ -16,9 +16,9 @@ export const tables: Record<string, string> = {
 
   "update.description": "Update description (current: {{value}}):\n\t",
   "update.dueDate":
-    "Update due date (YYYY-MM-DD HH:mm, current: ${value}):\n\t",
+    "Update due date (YYYY-MM-DD HH:mm, current: {{value}}):\n\t",
   "update.priority":
-    "Update priority (1: Low, 2: Medium, 3: High, current: {{value}) \n\t",
+    "Update priority (1: Low, 2: Medium, 3: High, current: {{value}}) \n\t",
   "update.notFound": "Task not found.",
   "update.skipField": "Press Enter to skip updating a field.",
   "update.success": "Task updated successfully.",

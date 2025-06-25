@@ -1,8 +1,0 @@
-Package: todo
-Version: 1.1.2
-Section: utils
-Priority: optional
-Architecture: amd64
-Depends: nodejs
-Maintainer: caesar <caesarmuksid@gmail.com.com> (GitHub: https://github.com/caesar003)
-Description: A simple todo list application built with Node.js
