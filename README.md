@@ -1,6 +1,6 @@
 # Todo Node CLI
 
-A command-line to-do list manager built with Node.js. This tool allows users to manage tasks directly from the terminal, with options for adding, deleting, updating, listing, and viewing task details. It also supports starting and finishing tasks, making it easy to track progress.
+A command-line to-do list manager built with Node.js and TypeScript. This tool allows users to manage tasks directly from the terminal, with options for adding, deleting, updating, listing, and viewing task details. It also supports starting and finishing tasks, making it easy to track progress.
 
 ## Features
 
@@ -11,32 +11,89 @@ A command-line to-do list manager built with Node.js. This tool allows users to 
 -   **View task details**: Get detailed information about any task by ID prefix.
 -   **View version**: Check the current version of the CLI tool.
 
+## Prerequisites
+
+-   **Node.js** (version 14 or higher)
+-   **npm** (comes with Node.js)
+
 ## Installation
 
-To install and use this to-do CLI tool, follow the steps below:
+You have two options to install this to-do CLI tool:
 
-### 1. Clone the repository
+### Option 1: Install from Source (Recommended)
+
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/caesar003/todo.git
 cd todo
 ```
 
-### 2. Make the script executable
+#### 2. Install dependencies
 
 ```bash
-chmod +x todo
+npm install
 ```
 
-### 3. Add the script to your PATH (optional)
-
-Move `todo.js` to a directory in your `$PATH` (e.g., `/usr/local/bin`):
+#### 3. Build the TypeScript project
 
 ```bash
-sudo mv todo.js /usr/local/bin/todo
+npm run build
+```
+
+This will compile the TypeScript source code to JavaScript in the `dist/` directory and run the postbuild script to prepare the debian package structure.
+
+#### 4. Make the compiled script executable
+
+```bash
+chmod +x dist/todo.js
+```
+
+#### 5. Add the script to your PATH (optional)
+
+Move the compiled JavaScript file to a directory in your `$PATH` (e.g., `/usr/local/bin`):
+
+```bash
+sudo cp dist/todo.js /usr/local/bin/todo
 ```
 
 Now you can run `todo` from anywhere in the terminal.
+
+### Option 2: Install .deb Package (Debian-based systems)
+
+For users on Debian-based distributions (Ubuntu, Debian, Linux Mint, Kali Linux), you can install the pre-built `.deb` package:
+
+#### 1. Download the .deb package
+
+Download the latest `.deb` package from the [releases page](https://github.com/caesar003/todo/releases).
+
+#### 2. Install the package
+
+```bash
+sudo dpkg -i todo_1.0.6_amd64.deb
+```
+
+If you encounter dependency issues, run:
+
+```bash
+sudo apt-get install -f
+```
+
+#### 3. Verify installation
+
+```bash
+todo -v
+```
+
+## Development
+
+If you want to run the application in development mode without building:
+
+```bash
+npm start
+```
+
+This uses `ts-node` to run the TypeScript files directly from `src/todo.ts`.
 
 ## Usage
 
@@ -143,13 +200,27 @@ $ todo -s abc123
 Started task with ID: abc123
 
 $ todo -l in-progress
-[] ID: abc123 - Finish homework [In Progress]
+[⏳] ID: abc123 - Finish homework [In Progress]
 
 $ todo -f abc123
 Updated task with ID: abc123
 
 $ todo -l done
 [✅] ID: abc123 - Finish homework [Done]
+```
+
+## Uninstalling
+
+### If installed from source:
+
+```bash
+sudo rm /usr/local/bin/todo
+```
+
+### If installed via .deb package:
+
+```bash
+sudo apt-get remove todo
 ```
 
 ## Configuration

@@ -8,3 +8,4 @@ debian/todo/usr/lib
 
 *.deb
 *.txt
+src/lib/constants.ts
