@@ -2,7 +2,7 @@
   "name": "todo",
   "repository": "https://github.com/caesar003/todo.git",
   "author": "caesar003",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "A simple command-line to-do list manager built with Node.js. It allows users to manage their tasks with ease directly from the terminal, supporting operations like adding, deleting, marking tasks as done, listing tasks, and viewing task details.",
   "main": "bin/index.js",
   "scripts": {
