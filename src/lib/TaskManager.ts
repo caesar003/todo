@@ -29,7 +29,7 @@ export class TaskManager {
     const ddProps = { value: defaultDateStr };
     const dtProps = { value: defaultTimeStr };
 
-    const prioPrompt = this.l("create.priorityInput");
+    const prioPrompt = this.l("create.priority");
     const titlePrompt = this.l("create.title");
     const descPrompt = this.l("create.description");
     const ddPrompt = this.l("create.dueDate", ddProps);
