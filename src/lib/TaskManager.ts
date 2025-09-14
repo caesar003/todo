@@ -202,7 +202,7 @@ export class TaskManager {
     console.log(this.l("detail.due", { value: formDue }));
 
     console.log(this.l("detail.status", { value: status }));
-    console.log(this.l("detail.priorty", { value: priority }));
+    console.log(this.l("detail.priority", { value: priority }));
 
     console.log(`-------------\n`);
     rl.close();
